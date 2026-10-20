@@ -1,0 +1,45 @@
+{
+  "name": "wavely",
+  "version": "0.1.0",
+  "description": "Open-source, self-hosted music streaming for AI-generated music",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test --test-concurrency=1 \"test/api/*.test.js\"",
+    "test:e2e": "node --test --test-concurrency=1 --test-timeout=180000 \"test/e2e/*.test.js\"",
+    "create-admin": "node server/cli.js create-admin",
+    "seed": "node scripts/seed-demo.mjs",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.3",
+    "@fastify/multipart": "^10.1.4",
+    "@fastify/rate-limit": "^11.2.1",
+    "@fastify/static": "^10.1.6",
+    "@fontsource-variable/geologica": "^5.3.0",
+    "@fontsource-variable/onest": "^5.3.1",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "better-sqlite3": "^13.0.3",
+    "fastify": "^5.12.7",
+    "htm": "^3.1.1",
+    "preact": "^11.0.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "playwright": "1.56.0"
+  },
+  "keywords": [
+    "music",
+    "streaming",
+    "ai-music",
+    "self-hosted",
+    "fastify",
+    "sqlite"
+  ]
+}

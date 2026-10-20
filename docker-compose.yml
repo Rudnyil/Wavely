@@ -1,0 +1,32 @@
+# Run:  docker compose up -d --build
+# Then open http://localhost:3000 — the first account you create becomes the administrator.
+services:
+  wavely:
+    build: .
+    image: wavely:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      INSTANCE_NAME: ${INSTANCE_NAME:-Wavely}
+      REGISTRATION: ${REGISTRATION:-open}
+      INVITE_CODE: ${INVITE_CODE:-}
+      UPLOAD_POLICY: ${UPLOAD_POLICY:-users}
+      REQUIRE_APPROVAL: ${REQUIRE_APPROVAL:-false}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-100}
+      MAX_TRACK_MINUTES: ${MAX_TRACK_MINUTES:-20}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+    volumes:
+      - wavely-data:/data
+    # Hardening: the app only writes to /data and /tmp.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  wavely-data:

@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: npm ci
+      - name: API tests
+        run: npm test
+      - name: Install browser for end-to-end tests
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end tests (browser, accessibility, operations)
+        run: npm run test:e2e
+
+  production-start:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Production install and boot
+        run: |
+          npm ci --omit=dev
+          DATA_DIR="$RUNNER_TEMP/data" PORT=3999 node server/index.js &
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:3999/healthz && break; sleep 1; done
+          curl -fs http://127.0.0.1:3999/healthz | grep '"status":"ok"'
+          curl -fs http://127.0.0.1:3999/ | grep -q '<div id="app">'
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t wavely:ci .
+      - name: Smoke test the container
+        run: |
+          docker run -d --name wavely -p 3000:3000 wavely:ci
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:3000/healthz && break; sleep 1; done
+          curl -fs http://127.0.0.1:3000/healthz | grep '"ffmpeg":true'
+          docker inspect --format '{{.State.Health.Status}}' wavely || true
