@@ -47,7 +47,9 @@ export async function startServer(env = {}) {
 export async function launch() {
   const launcher = playwright[ENGINE];
   if (!launcher) throw new Error(`Unknown WAVELY_BROWSER "${ENGINE}"`);
-  return launcher.launch(ENGINE === 'chromium' ? { args: ['--autoplay-policy=no-user-gesture-required'] } : {});
+  if (ENGINE === 'chromium') return launcher.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+  if (ENGINE === 'firefox') return launcher.launch({ firefoxUserPrefs: { 'media.autoplay.default': 0, 'media.autoplay.blocking_policy': 0 } });
+  return launcher.launch();
 }
 
 /** Opens a page and records console errors, page errors and failed requests so tests can assert there are none. */
@@ -56,11 +58,24 @@ export async function openPage(browser, url, { viewport = { width: 1280, height:
   const page = await context.newPage();
   const problems = [];
   page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
-  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
-  page.on('requestfailed', (r) => { const e = r.failure()?.errorText; if (e !== 'net::ERR_ABORTED') problems.push(`requestfailed: ${r.url()} ${e}`); });
+  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message} @ ${String(e.stack || '').split('\n').slice(0, 3).join(' | ')}`));
+  // A request cancelled because the page navigated away is normal; engines word it differently.
+  const pending = new Set();
+  page.on('request', (r) => pending.add(r.url()));
+  page.on('requestfinished', (r) => pending.delete(r.url()));
+  page.on('requestfailed', (r) => {
+    pending.delete(r.url());
+    const e = r.failure()?.errorText || '';
+    if (!/ABORTED|cancel/i.test(e)) problems.push(`requestfailed: ${r.url()} ${e}`);
+  });
   page.on('response', (r) => {
     if (r.status() >= 500) problems.push(`http ${r.status()}: ${r.url()}`);
   });
-  await page.goto(url);
+  try {
+    await page.goto(url);
+  } catch (err) {
+    err.message += `\nrequests still pending: ${[...pending].join(', ') || 'none'}`;
+    throw err;
+  }
   return { page, context, problems };
 }
