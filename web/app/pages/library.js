@@ -37,14 +37,14 @@ export function LibraryPage() {
     <div class="tabs" role="tablist">
       ${['liked', 'playlists', 'uploads'].map((n) => html`<button role="tab" aria-selected=${tab === n} onClick=${() => go(n)}>${t(`library.${n}`)}</button>`)}
     </div>
-    ${tab === 'liked' ? (liked.loading ? html`<${Spinner} />` : liked.error ? html`<${Failed} onRetry=${liked.reload} />` : (likedItems(liked.data)).length ? html`
+    ${tab === 'liked' ? (liked.loading || (!liked.data && !liked.error) ? html`<${Spinner} />` : liked.error ? html`<${Failed} onRetry=${liked.reload} />` : (likedItems(liked.data)).length ? html`
       <div style="margin-bottom:10px"><button class="btn" onClick=${() => playQueue(likedItems(liked.data), 0)}><${Icon} name="play" />${t('player.playAll')}</button></div>
       <${TrackList} tracks=${likedItems(liked.data)} />` : html`<${Empty} icon="heart" title=${t('library.noLiked')}>${t('library.noLikedHint')}<//>`) : null}
-    ${tab === 'playlists' ? (lists.loading ? html`<${Spinner} />` : lists.error ? html`<${Failed} onRetry=${lists.reload} />` : lists.data.items.length ? html`
+    ${tab === 'playlists' ? (lists.loading || (!lists.data && !lists.error) ? html`<${Spinner} />` : lists.error ? html`<${Failed} onRetry=${lists.reload} />` : lists.data.items.length ? html`
       <ul class="stack" style="gap:8px">${lists.data.items.map((p) => html`<li key=${p.id}><a class="btn" style="width:100%;justify-content:space-between;height:52px" href=${`/p/${p.id}`}>
         <span class="clamp"><strong>${p.name}</strong> ${p.isPublic ? '' : html`<span class="badge" style="margin-left:6px">${t('playlist.private')}</span>`}</span><span class="faint">${tn('count.tracks', p.tracks)}</span></a></li>`)}</ul>`
     : html`<${Empty} icon="library" title=${t('library.noPlaylists')}>${t('library.noPlaylistsHint')}<//>`) : null}
-    ${tab === 'uploads' ? (mine.loading ? html`<${Spinner} />` : mine.error ? html`<${Failed} onRetry=${mine.reload} />` : mine.data.items.length ? html`<${TrackList} tracks=${mine.data.items} />`
+    ${tab === 'uploads' ? (mine.loading || (!mine.data && !mine.error) ? html`<${Spinner} />` : mine.error ? html`<${Failed} onRetry=${mine.reload} />` : mine.data.items.length ? html`<${TrackList} tracks=${mine.data.items} />`
     : html`<${Empty} icon="upload" title=${t('library.noUploads')}>${config.canUpload ? t('library.noUploadsHint') : t('library.uploadsRestricted')}<//>`) : null}
   </div>`;
 }

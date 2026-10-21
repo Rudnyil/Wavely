@@ -83,7 +83,8 @@ export async function openPage(browser, url, { viewport = { width: 1280, height:
     if (r.status() >= 500) problems.push(`http ${r.status()}: ${r.url()}`);
   });
   try {
-    await page.goto(url);
+    // Firefox under CI sometimes never delivers the 'load' event to Playwright although the page is complete.
+    await page.goto(url, { waitUntil: ENGINE === 'firefox' ? 'domcontentloaded' : 'load' });
   } catch (err) {
     const state = await Promise.race([
       page.evaluate(() => ({ ready: document.readyState, fonts: document.fonts.status, resources: performance.getEntriesByType('resource').length, url: location.href })),

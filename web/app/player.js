@@ -197,10 +197,12 @@ export function dropTrack(id) {
 }
 
 // ---- audio element events ------------------------------------------------------
-audio.addEventListener('play', () => playerStore.set({ playing: true }));
-audio.addEventListener('pause', () => playerStore.set({ playing: false }));
+// The <audio> element is the source of truth. Browsers differ in the order of play/pause events around a src change
+// (Firefox can fire a late 'pause'), so every handler reads audio.paused instead of assuming what the event means.
+audio.addEventListener('play', () => playerStore.set({ playing: !audio.paused }));
+audio.addEventListener('pause', () => playerStore.set({ playing: !audio.paused }));
 audio.addEventListener('waiting', () => playerStore.set({ loading: true }));
-audio.addEventListener('playing', () => playerStore.set({ loading: false, playing: true }));
+audio.addEventListener('playing', () => playerStore.set({ loading: false, playing: !audio.paused }));
 audio.addEventListener('canplay', () => playerStore.set({ loading: false }));
 audio.addEventListener('loadedmetadata', () => {
   if (Number.isFinite(audio.duration)) timeStore.set({ duration: audio.duration });
@@ -212,6 +214,7 @@ audio.addEventListener('error', () => {
   toast(t('player.error'), 'error');
 });
 audio.addEventListener('timeupdate', () => {
+  if (playerStore.get().playing === audio.paused && audio.currentTime > 0) playerStore.set({ playing: !audio.paused });
   const cur = audio.currentTime;
   timeStore.set({ current: cur });
   const delta = cur - lastTime;
