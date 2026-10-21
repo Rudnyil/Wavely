@@ -87,6 +87,18 @@ The proxy must pass `Host` unchanged: the CSRF check compares the `Origin` heade
 2. Decide who may join and upload: `REGISTRATION`, `INVITE_CODE`, `UPLOAD_POLICY`, `REQUIRE_APPROVAL`. For a public instance, `REQUIRE_APPROVAL=true` is a sensible start.
 3. Read [OPERATORS.md](OPERATORS.md).
 
+## Forgotten passwords
+
+Wavely stores no email addresses, so there is no "reset by email". The operator resets it on the server (works while the server is running; the user is signed out everywhere):
+
+```bash
+WAVELY_PASSWORD='a new long password' npm run reset-password -- <username>
+# Docker:
+docker compose exec -e WAVELY_PASSWORD='a new long password' wavely node server/cli.js reset-password <username>
+```
+
+The role is not changed. Give the user the temporary password through a channel you trust and ask them to change it in Settings.
+
 ## 4. Backups
 
 Stop the server, or use SQLite's online backup, then copy the directory:
@@ -109,7 +121,21 @@ npm ci --omit=dev      # or: docker compose up -d --build
 
 Database migrations run automatically at startup and are applied in order. The server refuses to start if the database was written by a newer version, so rolling back needs a backup from before the upgrade.
 
-## 6. Operations notes
+## 6. Capacity (measured)
+
+Load test on one CPU core with 20,000 tracks, 500 users and 50 concurrent clients, API and files on the same machine (Linux VM, no reverse proxy):
+
+| Request | Throughput |
+|---|---|
+| Static page, track detail, generated cover | 2,900–5,000 req/s |
+| Home page lists, genre filter, genre list | 700–1,800 req/s |
+| Artist list (cached until the next write) | ~4,800 req/s |
+| Deep paging by popularity | ~180 req/s |
+| Full-text search with a very common word (matches ~25% of tracks) | 45–65 req/s |
+
+Memory stayed at about 150 MB. Audio streaming is bounded by disk and network, not by the app. SQLite runs in a single process, so this is the capacity of one instance; a hobby or small community instance is far below it. Reproduce it with `npm run loadtest` (it seeds a temporary database and touches no real data).
+
+## 7. Operations notes
 
 - Health: `GET /healthz` → `{"status":"ok","ffmpeg":true}`. `ffmpeg:false` means uploads will fail until `ffmpeg`/`ffprobe` are available.
 - Logs are JSON on stdout (`LOG_LEVEL=info|warn|error|debug`).

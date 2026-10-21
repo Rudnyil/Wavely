@@ -108,6 +108,21 @@ const MIGRATIONS = [
   CREATE INDEX idx_plays_recent ON plays_recent(track_id, key, at);
   CREATE INDEX idx_plays_recent_at ON plays_recent(at);
   `,
+  /* 2: map track ids to FTS rowids, so updates and deletes need no scan of the whole index */ `
+  CREATE TABLE tracks_fts_map (
+    track_id  TEXT    PRIMARY KEY,
+    fts_rowid INTEGER NOT NULL
+  ) WITHOUT ROWID;
+  INSERT INTO tracks_fts_map (track_id, fts_rowid) SELECT track_id, rowid FROM tracks_fts;
+  `,
+  /* 3: indexes that match the list sort orders, genre counts and artist totals */ `
+  DROP INDEX idx_tracks_status_plays;
+  CREATE INDEX idx_tracks_status_plays ON tracks(status, plays DESC, created_at DESC);
+  CREATE INDEX idx_tracks_status_likes ON tracks(status, likes_count DESC, created_at DESC);
+  CREATE INDEX idx_tracks_status_title ON tracks(status, title COLLATE NOCASE);
+  CREATE INDEX idx_tracks_status_genre ON tracks(status, genre COLLATE NOCASE);
+  CREATE INDEX idx_tracks_user_status ON tracks(user_id, status, plays);
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

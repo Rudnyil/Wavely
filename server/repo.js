@@ -77,8 +77,20 @@ export function listTracks(db, viewer, opts = {}) {
   const limit = Math.min(Math.max(opts.limit ?? 30, 1), 100);
   const offset = Math.max(opts.offset ?? 0, 0);
   const sqlWhere = ` WHERE ${where.join(' AND ')}`;
-  const total = db.prepare(`SELECT COUNT(*) AS n FROM tracks t JOIN users u ON u.id = t.user_id${join}${sqlWhere}`)
-    .get(params).n;
+  // users is only joined when filtering by artist: every track has an owner (foreign key), so the join cannot change the count.
+  const countFrom = opts.artist ? 'tracks t JOIN users u ON u.id = t.user_id' : 'tracks t';
+  const countSql = `SELECT COUNT(*) AS n FROM ${countFrom}${join}${sqlWhere}`;
+  if (opts.q) {
+    // Full-text search: rank and page only ids and sort keys first (narrow rows), then load the page; the total comes from the same pass.
+    const page = db.prepare(`SELECT t.id, COUNT(*) OVER () AS total_rows FROM tracks t${opts.artist ? ' JOIN users u ON u.id = t.user_id' : ''}${join}${sqlWhere} ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`).all(params);
+    const total = page.length ? page[0].total_rows : (offset > 0 ? db.prepare(countSql).get(params).n : 0);
+    if (!page.length) return { items: [], total };
+    const byId = new Map(db.prepare(`${BASE} WHERE t.id IN (${page.map(() => '?').join(',')})`).all(...page.map((r) => r.id), { viewer: params.viewer })
+      .map((r) => [r.id, r]));
+    const rows = page.map((r) => byId.get(r.id)).filter(Boolean);
+    return { items: rows.map((r) => serializeTrack(r)), total };
+  }
+  const total = db.prepare(countSql).get(params).n;
   const rows = db.prepare(`${BASE}${join}${sqlWhere} ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`).all(params);
   return { items: rows.map((r) => serializeTrack(r)), total };
 }

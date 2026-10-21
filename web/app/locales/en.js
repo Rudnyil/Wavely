@@ -294,6 +294,7 @@ export default {
   'err.too_long': 'The track is longer than allowed on this server.',
   'err.too_large': 'The file is too large.',
   'err.invalid_cover': 'The cover must be a PNG, JPEG, WebP or GIF image.',
+  'err.cover_too_large': 'The cover image is too large (maximum about 40 megapixels).',
   'err.cover_too_large': 'The cover image is too large (5 MB maximum).',
   'err.missing_audio': 'Choose an audio file.',
   'err.missing_title': 'Enter a title.',

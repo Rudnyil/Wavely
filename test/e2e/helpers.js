@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
-import { chromium } from 'playwright';
+import * as playwright from 'playwright';
+
+// WAVELY_BROWSER=chromium (default) | firefox | webkit
+const ENGINE = process.env.WAVELY_BROWSER || 'chromium';
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -42,7 +45,9 @@ export async function startServer(env = {}) {
 }
 
 export async function launch() {
-  return chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+  const launcher = playwright[ENGINE];
+  if (!launcher) throw new Error(`Unknown WAVELY_BROWSER "${ENGINE}"`);
+  return launcher.launch(ENGINE === 'chromium' ? { args: ['--autoplay-policy=no-user-gesture-required'] } : {});
 }
 
 /** Opens a page and records console errors, page errors and failed requests so tests can assert there are none. */

@@ -38,8 +38,13 @@ export default async function metaRoutes(app) {
     return { items: rows };
   });
 
+  const artistCache = new Map();
   app.get('/api/artists', async (req) => {
     const { q } = req.query;
+    const cacheKey = `${q || ''}|${req.query.limit || ''}`;
+    const hit = artistCache.get(cacheKey);
+    if (hit && hit.version === app.dataVersion && Date.now() - hit.at < 60000) return hit.value;
+    const version = app.dataVersion;
     const limit = clampInt(req.query.limit, 40, 1, 100);
     const params = { limit };
     let filter = '';
@@ -54,7 +59,10 @@ export default async function metaRoutes(app) {
         WHERE u.disabled = 0 ${filter}
         GROUP BY u.id ORDER BY plays DESC, tracks DESC LIMIT @limit`,
     ).all(params);
-    return { items: rows };
+    const value = { items: rows };
+    if (artistCache.size > 200) artistCache.clear();
+    artistCache.set(cacheKey, { version, at: Date.now(), value });
+    return value;
   });
 
   app.get('/api/artists/:username', async (req) => {

@@ -67,6 +67,13 @@ export async function buildApp({ config, db, logger = false }) {
   app.decorate('ffmpegOk', ffmpegOk);
   app.decorate('loginThrottle', new LoginThrottle());
   app.decorateRequest('user', null);
+  // Bumped after every successful write request; read-heavy aggregates (artist list) are cached until it changes.
+  app.decorate('dataVersion', 0);
+  // onSend runs before the response leaves, so a client that reads right after its own write never sees the old cache.
+  app.addHook('onSend', async (req, reply, payload) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD' && reply.statusCode < 400) app.dataVersion += 1;
+    return payload;
+  });
 
   await app.register(fastifyCookie);
   if (config.rateLimit) {

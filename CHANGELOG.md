@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- `npm run reset-password` for users who forgot their password (role unchanged, sessions ended).
+- Security: uploads are limited to audio containers; covers over 40 megapixels are rejected before decoding (a 750 KB PNG could previously use 800 MB of memory).
+- Performance: indexes for every sort order, no unneeded join when counting, search returns its total in one pass, search index updates no longer scan the whole index, artist list cached until the next write. On 20,000 tracks the home lists went from ~95 to ~850 requests/s and genre filters from ~125 to ~1,800 requests/s.
+- Pages show an error with a retry button instead of crashing when a request fails; a dropped connection is retried once.
+- `.npmrc` skips install scripts (better-sqlite3 ships prebuilt binaries).
+
 ## 0.1.0
 
 First release.

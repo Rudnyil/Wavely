@@ -11,10 +11,13 @@ function usage() {
   npm run create-admin -- <username> [password]
       Creates an administrator, or promotes/resets an existing user.
       The password can also be passed in the WAVELY_PASSWORD environment variable
-      (preferred: command-line arguments are visible to other users of the machine).`);
+      (preferred: command-line arguments are visible to other users of the machine).
+  npm run reset-password -- <username> [password]
+      Sets a new password for any existing user without changing their role
+      (use it when someone forgot their password) and signs them out everywhere.`);
 }
 
-if (command !== 'create-admin') {
+if (command !== 'create-admin' && command !== 'reset-password') {
   usage();
   process.exit(command ? 1 : 0);
 }
@@ -31,7 +34,16 @@ const config = loadConfig();
 const db = openDb(path.join(config.dataDir, 'wavely.db'));
 const hash = await hashPassword(password);
 const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-if (existing) {
+if (command === 'reset-password') {
+  if (!existing) {
+    console.error(`User "${username}" does not exist.`);
+    db.close();
+    process.exit(1);
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, existing.id);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(existing.id);
+  console.log(`Password for "${username}" was updated and all their sessions were ended.`);
+} else if (existing) {
   db.prepare("UPDATE users SET role = 'admin', disabled = 0, password_hash = ? WHERE id = ?").run(hash, existing.id);
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(existing.id);
   console.log(`User "${username}" is now an administrator and the password was updated.`);

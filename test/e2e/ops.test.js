@@ -149,6 +149,25 @@ describe('operations over a real socket', () => {
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   });
 
+  test('reset-password CLI changes the password of a regular user, keeps the role, ends sessions', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wavely-ops-'));
+    const s = await boot(dir);
+    try {
+      await register(s.url, 'admin1'); // first account becomes admin
+      const cookie = await register(s.url, 'bob');
+      assert.equal((await fetch(`${s.url}/api/me`, { headers: headers(cookie) }).then((r) => r.json())).user.username, 'bob');
+      const run = (args, env = {}) => execFileSync('node', ['server/cli.js', 'reset-password', ...args], { env: { ...process.env, DATA_DIR: dir, ...env } }).toString();
+      assert.match(run(['bob'], { WAVELY_PASSWORD: 'brand new password' }), /updated and all their sessions were ended/);
+      assert.throws(() => run(['nobody'], { WAVELY_PASSWORD: 'brand new password' }), /Command failed/);
+      assert.equal((await fetch(`${s.url}/api/me`, { headers: headers(cookie) }).then((r) => r.json())).user, null);
+      const old = await fetch(`${s.url}/api/auth/login`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ username: 'bob', password: PASS }) });
+      assert.equal(old.status, 401);
+      const fresh = await fetch(`${s.url}/api/auth/login`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ username: 'bob', password: 'brand new password' }) });
+      assert.equal(fresh.status, 200);
+      assert.equal((await fresh.json()).user.role, 'user');
+    } finally { await s.stop(); fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
   test('invalid configuration fails fast with a clear message', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wavely-ops-'));
     try {

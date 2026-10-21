@@ -24,6 +24,28 @@ jobs:
       - name: End-to-end tests (browser, accessibility, operations)
         run: npm run test:e2e
 
+  # Informational: the main suite above runs in Chromium. This repeats the browser tests in Firefox and WebKit (Safari's engine).
+  cross-browser:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: npm ci
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: End-to-end tests in ${{ matrix.browser }}
+        env:
+          WAVELY_BROWSER: ${{ matrix.browser }}
+        run: npm run test:e2e
+
   production-start:
     runs-on: ubuntu-latest
     steps:

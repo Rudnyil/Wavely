@@ -63,7 +63,7 @@ Invalid values stop the server at startup with a clear message.
 
 ### Administration
 
-- The first account on an empty server becomes the administrator. Create or reset one from the shell: `npm run create-admin -- <username>` with the password in `WAVELY_PASSWORD` (or as a second argument).
+- The first account on an empty server becomes the administrator. Create one from the shell with `npm run create-admin -- <username>` (password in `WAVELY_PASSWORD`). A user who forgot their password: `npm run reset-password -- <username>` (see [docs/DEPLOY.md](docs/DEPLOY.md)).
 - Roles: `user`, `moderator` (reports, review queue, removed tracks), `admin` (everything, including user management).
 - There is no email-based password reset by design (no email is collected): an administrator resets a password with the CLI above.
 

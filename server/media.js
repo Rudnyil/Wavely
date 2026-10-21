@@ -4,6 +4,14 @@ import { Semaphore } from './util.js';
 import { badRequest } from './errors.js';
 
 const PEAK_COUNT = 160;
+// Containers accepted for uploads. Anything else (HLS/DASH playlists, concat lists, SDP, image sequences, ...) can make
+// ffmpeg follow references inside the file, so it is refused before the file is decoded.
+const AUDIO_FORMATS = new Set([
+  'mp3', 'wav', 'w64', 'flac', 'ogg', 'oga', 'opus', 'matroska', 'webm', 'mov', 'mp4', 'm4a', '3gp', 'aac', 'adts', 'aiff',
+  'ac3', 'eac3', 'ape', 'wv', 'caf', 'asf', 'amr', 'tta', 'dsf', 'mpeg', 'mp2',
+]);
+const MAX_COVER_SIDE = 12000;
+const MAX_COVER_PIXELS = 40e6;
 
 /** Runs a binary without a shell and collects output; kills it after timeoutMs. */
 export function run(bin, args, { timeoutMs = 10 * 60 * 1000, binary = false, maxBytes = 64 * 1024 * 1024 } = {}) {
@@ -44,6 +52,8 @@ export function createMedia(config) {
     }
     let info;
     try { info = JSON.parse(raw); } catch { throw badRequest('invalid_audio', 'The file is not a readable audio file'); }
+    const formats = String(info.format?.format_name || '').split(',');
+    if (!formats.some((f) => AUDIO_FORMATS.has(f))) throw badRequest('invalid_audio', 'This audio format is not supported');
     const audio = (info.streams || []).find((s) => s.codec_type === 'audio');
     if (!audio) throw badRequest('no_audio', 'The file does not contain an audio track');
     const duration = Number(info.format?.duration || audio.duration);
@@ -96,6 +106,20 @@ export function createMedia(config) {
 
   /** Crops and scales any image to a 640x640 JPEG. Rejects files that are not images. */
   async function cover(input, output) {
+    // Refuse huge images before decoding: a small PNG can expand to gigabytes of pixels.
+    try {
+      const raw = await run(config.ffprobePath, [
+        '-v', 'error', ...guard, '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-print_format', 'json', input,
+      ], { timeoutMs: 15000 });
+      const { width, height } = JSON.parse(raw).streams?.[0] || {};
+      if (!(width > 0 && height > 0)) throw new Error('no image');
+      if (width > MAX_COVER_SIDE || height > MAX_COVER_SIDE || width * height > MAX_COVER_PIXELS) {
+        throw badRequest('cover_too_large', 'The cover image has too many pixels (maximum about 40 megapixels)');
+      }
+    } catch (e) {
+      if (e.code === 'cover_too_large' || e.status === 400) throw e;
+      throw badRequest('invalid_cover', 'The cover must be a PNG, JPEG, WebP or GIF image');
+    }
     try {
       await sem.run(() => run(config.ffmpegPath, [
         '-nostdin', '-y', '-v', 'error', ...guard, '-i', input, '-frames:v', '1',
