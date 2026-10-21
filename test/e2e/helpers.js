@@ -84,7 +84,9 @@ export async function openPage(browser, url, { viewport = { width: 1280, height:
   });
   try {
     // Firefox under CI sometimes never reports the navigation as finished to Playwright although the page is complete.
-    await page.goto(url, { waitUntil: ENGINE === 'firefox' ? 'domcontentloaded' : 'load', timeout: ENGINE === 'firefox' ? 12000 : 30000 });
+    const navigate = () => page.goto(url, { waitUntil: ENGINE === 'firefox' ? 'domcontentloaded' : 'load', timeout: ENGINE === 'firefox' ? 12000 : 30000 });
+    // A navigation that hangs in Firefox is retried once; it is not an application problem (the server answers immediately).
+    try { await navigate(); } catch (first) { if (ENGINE !== 'firefox') throw first; await navigate(); }
   } catch (err) {
     const state = await Promise.race([
       page.evaluate(() => ({ ready: document.readyState, fonts: document.fonts.status, resources: performance.getEntriesByType('resource').length, url: location.href })),
