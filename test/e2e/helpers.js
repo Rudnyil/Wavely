@@ -44,6 +44,13 @@ export async function startServer(env = {}) {
   };
 }
 
+const openContexts = new Set();
+/** Closes every context opened by openPage; call from afterEach so a failed assertion cannot leave a page running. */
+export async function closeOpenContexts() {
+  for (const c of [...openContexts]) await c.close().catch(() => {});
+  openContexts.clear();
+}
+
 export async function launch() {
   const launcher = playwright[ENGINE];
   if (!launcher) throw new Error(`Unknown WAVELY_BROWSER "${ENGINE}"`);
@@ -55,10 +62,14 @@ export async function launch() {
 /** Opens a page and records console errors, page errors and failed requests so tests can assert there are none. */
 export async function openPage(browser, url, { viewport = { width: 1280, height: 800 }, colorScheme = 'dark', locale = 'en-US', hasTouch = false } = {}) {
   const context = await browser.newContext({ viewport, colorScheme, locale, hasTouch, acceptDownloads: true });
+  openContexts.add(context);
+  context.on('close', () => openContexts.delete(context));
   const page = await context.newPage();
   const problems = [];
-  page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
-  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message} @ ${String(e.stack || '').split('\n').slice(0, 3).join(' | ')}`));
+  // Engines log cancelled loads (the page navigated away) as errors: Firefox NS_BINDING_ABORTED for fonts, WebKit access-control failures for fetches.
+  const abortNoise = (text) => /status=2152398850|NS_BINDING_ABORTED|Load request cancelled|due to access control checks/.test(text);
+  page.on('console', (m) => { if (m.type() === 'error' && !abortNoise(m.text())) problems.push(`console: ${m.text()}`); });
+  page.on('pageerror', (e) => abortNoise(e.message) || problems.push(`pageerror: ${e.message} @ ${String(e.stack || '').split('\n').slice(0, 3).join(' | ')}`));
   // A request cancelled because the page navigated away is normal; engines word it differently.
   const pending = new Set();
   page.on('request', (r) => pending.add(r.url()));
@@ -74,7 +85,11 @@ export async function openPage(browser, url, { viewport = { width: 1280, height:
   try {
     await page.goto(url);
   } catch (err) {
-    err.message += `\nrequests still pending: ${[...pending].join(', ') || 'none'}`;
+    const state = await Promise.race([
+      page.evaluate(() => ({ ready: document.readyState, fonts: document.fonts.status, resources: performance.getEntriesByType('resource').length, url: location.href })),
+      new Promise((r) => setTimeout(() => r('page unresponsive'), 3000)),
+    ]).catch((e) => `evaluate failed: ${e.message}`);
+    err.message += `\nrequests still pending: ${[...pending].join(', ') || 'none'}; page state: ${JSON.stringify(state)}`;
     throw err;
   }
   return { page, context, problems };

@@ -1,7 +1,7 @@
-import { test, describe, before, after } from 'node:test';
+import { test, describe, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { startServer, launch, openPage } from './helpers.js';
+import { startServer, launch, openPage, closeOpenContexts } from './helpers.js';
 import { audio } from '../helpers.js';
 
 const PASS = 'correct horse battery';
@@ -34,6 +34,8 @@ async function signIn(page, username) {
   await dlg.getByRole('button', { name: 'Sign in' }).click();
   await page.getByRole('button', { name: 'Account', exact: true }).waitFor();
 }
+
+afterEach(closeOpenContexts);
 
 describe('moderation, settings and server modes', () => {
   before(async () => { server = await startServer({ REQUIRE_APPROVAL: 'true' }); browser = await launch(); });

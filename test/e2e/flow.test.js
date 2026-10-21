@@ -71,7 +71,16 @@ describe('main user flow (desktop)', () => {
     assert.equal(page.url().includes('/t/'), true);
     assert.equal(await page.getByTestId('player-title').textContent(), 'Neon Rain');
 
-    await page.getByRole('button', { name: 'Pause' }).first().click();
+    try {
+      await page.getByRole('button', { name: 'Pause' }).first().click({ timeout: 8000 });
+    } catch (err) {
+      const diag = await page.evaluate(() => ({
+        labels: [...document.querySelectorAll('.playbtn')].map((b) => b.getAttribute('aria-label')),
+        paused: window.__wavelyAudio.paused, readyState: window.__wavelyAudio.readyState, time: window.__wavelyAudio.currentTime,
+      }));
+      err.message += `\nplayer diagnostics: ${JSON.stringify(diag)}`;
+      throw err;
+    }
     st = await audioState(page);
     assert.equal(st.paused, true);
 

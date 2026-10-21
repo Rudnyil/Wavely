@@ -1,8 +1,8 @@
-import { test, describe, before, after } from 'node:test';
+import { test, describe, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { AxeBuilder } from '@axe-core/playwright';
-import { startServer, launch, openPage } from './helpers.js';
+import { startServer, launch, openPage, closeOpenContexts } from './helpers.js';
 
 let server; let browser; let trackPath; let playlistPath;
 const PASS = 'demo-password-123';
@@ -35,6 +35,8 @@ async function noHorizontalScroll(page, label) {
   });
   assert.ok(overflow.doc <= 0 && overflow.main <= 0, `${label}: horizontal overflow ${JSON.stringify(overflow)}`);
 }
+
+afterEach(closeOpenContexts);
 
 describe('accessibility and responsive layout', () => {
   before(async () => {
