@@ -40,7 +40,7 @@ docker compose up -d --build
 
 ## Налаштування
 
-Усе налаштовується змінними середовища, див. [`.env.example`](.env.example). Найважливіші: `BASE_URL` (публічна адреса; з `https://` вмикає Secure-cookie та HSTS), `REGISTRATION` (`open`, `invite`, `closed`), `UPLOAD_POLICY` (`users` або `admins`), `REQUIRE_APPROVAL` (перевірка модератором перед публікацією), `MAX_UPLOAD_MB`, `MAX_TRACK_MINUTES`, `TRUST_PROXY` (лише за власним проксі). Некоректні значення зупиняють сервер під час запуску з чітким повідомленням. Повна таблиця — в [англійському README](README.md#configuration).
+Усе налаштовується змінними середовища, див. [`.env.example`](.env.example). Найважливіші: `BASE_URL` (публічна адреса; з `https://` вмикає Secure-cookie та HSTS), `REGISTRATION` (`open`, `invite`, `closed`), `UPLOAD_POLICY` (`users` або `admins`), `REQUIRE_APPROVAL` (перевірка модератором перед публікацією), `CONTACT_EMAIL` і `LEGAL_URL` (контакт для правовласників та ваші умови — обов’язково задайте для публічного сервера, див. [docs/LEGAL.md](docs/LEGAL.md)), `MAX_UPLOAD_MB`, `MAX_TRACK_MINUTES`, `TRUST_PROXY` (лише за власним проксі). Некоректні значення зупиняють сервер під час запуску з чітким повідомленням. Повна таблиця — в [англійському README](README.md#configuration).
 
 ### Адміністрування
 

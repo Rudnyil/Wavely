@@ -1,5 +1,7 @@
 # Running a public instance
 
+See [LEGAL.md](LEGAL.md) for the full checklist, a takedown procedure, questions for a lawyer and a terms template.
+
 This page is practical guidance, not legal advice. Laws differ by country; if you serve the public, ask a lawyer where you operate.
 
 ## What the software does for you

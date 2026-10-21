@@ -12,7 +12,11 @@ export function AboutPage() {
   return html`<div class="page" style="max-width:820px">
     <h1>${t('about.title')}</h1>
     <p class="muted" style="margin-top:10px">${t('about.intro', { name: config.name })}</p>
-    ${block('rules')}${block('rights')}${block('report')}${block('privacy')}${block('oss')}
+    ${block('rules')}${block('rights')}${block('report')}
+    ${config.contactEmail || config.legalUrl ? html`<section class="panel" style="margin-top:16px" aria-labelledby="h-contact"><h2 id="h-contact" style="margin-bottom:8px">${t('about.contact.title')}</h2>
+      ${config.contactEmail ? html`<p class="muted" style="margin-top:8px">${t('about.contact.email')} <a href=${`mailto:${config.contactEmail}`}>${config.contactEmail}</a></p>` : null}
+      ${config.legalUrl ? html`<p class="muted" style="margin-top:8px"><a href=${config.legalUrl} rel="noopener noreferrer" target="_blank">${t('about.contact.legal')}</a></p>` : null}</section>` : null}
+    ${block('privacy')}${block('oss')}
     <p class="faint" style="margin-top:16px">${config.name} · v${config.version}</p>
   </div>`;
 }

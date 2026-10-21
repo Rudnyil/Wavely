@@ -123,6 +123,13 @@ const MIGRATIONS = [
   CREATE INDEX idx_tracks_status_genre ON tracks(status, genre COLLATE NOCASE);
   CREATE INDEX idx_tracks_user_status ON tracks(user_id, status, plays);
   `,
+  /* 4: failed-login counters kept in the database, so a restart does not reset the brute-force protection */ `
+  CREATE TABLE login_failures (
+    name  TEXT    PRIMARY KEY,
+    count INTEGER NOT NULL,
+    first INTEGER NOT NULL
+  ) WITHOUT ROWID;
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

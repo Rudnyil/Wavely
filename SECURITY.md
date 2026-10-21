@@ -14,7 +14,7 @@ The latest release receives security fixes.
 |---|---|
 | Passwords | scrypt (N=32768, r=8, p=1), per-password random salt, constant-time comparison, dummy verification for unknown users |
 | Sessions | 256-bit random token in an HttpOnly, SameSite=Lax cookie (`Secure` when `BASE_URL` is https); only the SHA-256 hash is stored; password change ends other sessions; disabling a user ends theirs |
-| Brute force | Per-IP rate limits on registration, login, uploads, reports; per-username failure throttle (8 per 15 minutes) |
+| Brute force | Per-IP rate limits on registration, login, uploads, reports; per-username failure throttle (8 per 15 minutes, stored in the database) |
 | CSRF | State-changing requests need the custom header `X-Requested-With: wavely`; `Origin` must match `Host`; no CORS |
 | XSS | Strict Content-Security-Policy (`default-src 'none'`, scripts only from the site plus the import map by hash, no `unsafe-inline` for scripts, framing denied); the UI renders user text as text; user text is NFC-normalised and stripped of control/bidi-override characters; API responses are served with `nosniff` and a sandboxing CSP |
 | Injection | All SQL parameterised; full-text queries are rebuilt from letter/digit tokens, so operators cannot be injected |
@@ -24,6 +24,6 @@ The latest release receives security fixes.
 
 ## Known limits
 
-- Rate limiting and login throttling are in memory and per process; they reset on restart.
+- Per-IP rate limits are kept in memory and reset on restart. The per-username failed-login counter is stored in the database, so a restart does not reset it. Only one server process per database is supported.
 - Moderation depends on people. See [docs/OPERATORS.md](docs/OPERATORS.md).
 - Keep Node.js, ffmpeg and your dependencies up to date: media parsers are a common attack surface.

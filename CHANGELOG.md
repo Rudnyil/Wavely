@@ -7,6 +7,8 @@
 - Performance: indexes for every sort order, no unneeded join when counting, search returns its total in one pass, search index updates no longer scan the whole index, artist list cached until the next write. On 20,000 tracks the home lists went from ~95 to ~850 requests/s and genre filters from ~125 to ~1,800 requests/s.
 - Pages show an error with a retry button instead of crashing when a request fails; a dropped connection is retried once.
 - Cross-browser CI: the browser suite also runs in Firefox and WebKit (Safari's engine). It found and fixed two Firefox bugs: the player button could show "Play" while audio was playing, and the Library page could crash while its data was empty.
+- Failed-login counters are stored in the database and survive restarts. A permission-matrix test classifies every API route (anonymous, user, moderator, admin) and checks ownership rules, so a new route without an access rule fails the build.
+- `CONTACT_EMAIL` and `LEGAL_URL` settings (About page), `docs/LEGAL.md` with a takedown procedure, questions for a lawyer and a terms template.
 - `.npmrc` skips install scripts (better-sqlite3 ships prebuilt binaries).
 
 ## 0.1.0

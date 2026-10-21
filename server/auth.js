@@ -114,37 +114,42 @@ export function csrfHook(req) {
 }
 
 /** In-memory tracker of failed logins per username, to slow down password guessing. */
+/** Failed-login counter per username. Stored in SQLite so that restarting the server does not reset it. */
 export class LoginThrottle {
-  constructor({ max = 8, windowMs = 15 * 60 * 1000 } = {}) {
+  constructor(db, { max = 8, windowMs = 15 * 60 * 1000 } = {}) {
+    this.db = db;
     this.max = max;
     this.windowMs = windowMs;
-    this.map = new Map();
   }
 
-  key(name) { return String(name).toLowerCase(); }
+  key(name) { return String(name).toLowerCase().slice(0, 64); }
 
   blocked(name) {
-    const e = this.map.get(this.key(name));
+    const e = this.db.prepare('SELECT count, first FROM login_failures WHERE name = ?').get(this.key(name));
     if (!e) return false;
-    if (now() - e.first > this.windowMs) { this.map.delete(this.key(name)); return false; }
+    if (now() - e.first > this.windowMs) { this.reset(name); return false; }
     return e.count >= this.max;
   }
 
   fail(name) {
     const k = this.key(name);
-    const e = this.map.get(k);
-    if (!e || now() - e.first > this.windowMs) this.map.set(k, { count: 1, first: now() });
-    else e.count += 1;
-    if (this.map.size > 10000) this.map.clear();
+    const t = now();
+    const e = this.db.prepare('SELECT first FROM login_failures WHERE name = ?').get(k);
+    if (!e || t - e.first > this.windowMs) {
+      this.db.prepare('INSERT OR REPLACE INTO login_failures (name, count, first) VALUES (?, 1, ?)').run(k, t);
+    } else {
+      this.db.prepare('UPDATE login_failures SET count = count + 1 WHERE name = ?').run(k);
+    }
   }
 
-  reset(name) { this.map.delete(this.key(name)); }
+  reset(name) { this.db.prepare('DELETE FROM login_failures WHERE name = ?').run(this.key(name)); }
 }
 
 export function purgeExpired(db) {
   const t = now();
   db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(t);
   db.prepare('DELETE FROM plays_recent WHERE at < ?').run(t - 31 * 60 * 1000);
+  db.prepare('DELETE FROM login_failures WHERE first < ?').run(t - 16 * 60 * 1000);
 }
 
 export { newId };

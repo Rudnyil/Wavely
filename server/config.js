@@ -26,6 +26,22 @@ function oneOf(name, value, fallback, allowed) {
   return value;
 }
 
+function email(name, value) {
+  const v = String(value || '').trim();
+  if (!v) return '';
+  if (v.length > 120 || !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(v)) throw new Error(`${name} must be an email address, got "${value}"`);
+  return v;
+}
+
+function httpUrl(name, value) {
+  const v = String(value || '').trim();
+  if (!v) return '';
+  let u;
+  try { u = new URL(v); } catch { throw new Error(`${name} must be a full http(s) URL, got "${value}"`); }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error(`${name} must start with https:// or http://`);
+  return u.href;
+}
+
 /**
  * Reads and validates configuration from environment variables.
  * Every option has a safe default, so a bare `npm start` works.
@@ -37,6 +53,8 @@ export function loadConfig(env = process.env) {
     host: env.HOST || '0.0.0.0',
     dataDir: path.resolve(env.DATA_DIR || './data'),
     baseUrl,
+    contactEmail: email('CONTACT_EMAIL', env.CONTACT_EMAIL),
+    legalUrl: httpUrl('LEGAL_URL', env.LEGAL_URL),
     instanceName: (env.INSTANCE_NAME || 'Wavely').trim().slice(0, 40) || 'Wavely',
     registration: oneOf('REGISTRATION', env.REGISTRATION, 'open', ['open', 'invite', 'closed']),
     inviteCode: env.INVITE_CODE || '',

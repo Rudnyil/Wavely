@@ -48,6 +48,8 @@ All settings are environment variables; see [`.env.example`](.env.example).
 | `BASE_URL` | empty | Public URL. `https://…` enables Secure cookies and HSTS |
 | `DATA_DIR` | `./data` | Database, audio and covers |
 | `INSTANCE_NAME` | `Wavely` | Name shown in the UI |
+| `CONTACT_EMAIL` | empty | Contact for rights holders and abuse reports, shown on the About page |
+| `LEGAL_URL` | empty | Link to your own terms and privacy policy, shown on the About page |
 | `REGISTRATION` | `open` | `open`, `invite` (needs `INVITE_CODE`) or `closed` |
 | `UPLOAD_POLICY` | `users` | `users` or `admins` |
 | `REQUIRE_APPROVAL` | `false` | Regular users' uploads wait for a moderator |

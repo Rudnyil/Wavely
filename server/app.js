@@ -65,10 +65,13 @@ export async function buildApp({ config, db, logger = false }) {
   app.decorate('storage', storage);
   app.decorate('media', media);
   app.decorate('ffmpegOk', ffmpegOk);
-  app.decorate('loginThrottle', new LoginThrottle());
+  app.decorate('loginThrottle', new LoginThrottle(db));
   app.decorateRequest('user', null);
   // Bumped after every successful write request; read-heavy aggregates (artist list) are cached until it changes.
   app.decorate('dataVersion', 0);
+  // Every registered route, for the permission matrix test.
+  app.decorate('routeList', []);
+  app.addHook('onRoute', (r) => { for (const m of [].concat(r.method)) if (m !== 'HEAD' && m !== 'OPTIONS') app.routeList.push(`${m} ${r.url}`); });
   // onSend runs before the response leaves, so a client that reads right after its own write never sees the old cache.
   app.addHook('onSend', async (req, reply, payload) => {
     if (req.method !== 'GET' && req.method !== 'HEAD' && reply.statusCode < 400) app.dataVersion += 1;

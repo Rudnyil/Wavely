@@ -10,6 +10,8 @@ services:
     environment:
       BASE_URL: ${BASE_URL:-http://localhost:3000}
       INSTANCE_NAME: ${INSTANCE_NAME:-Wavely}
+      CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+      LEGAL_URL: ${LEGAL_URL:-}
       REGISTRATION: ${REGISTRATION:-open}
       INVITE_CODE: ${INVITE_CODE:-}
       UPLOAD_POLICY: ${UPLOAD_POLICY:-users}

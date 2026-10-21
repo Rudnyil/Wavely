@@ -18,6 +18,8 @@ export default async function metaRoutes(app) {
     const user = req.user;
     return {
       name: config.instanceName,
+      contactEmail: config.contactEmail,
+      legalUrl: config.legalUrl,
       version: VERSION,
       registration: config.registration,
       uploadPolicy: config.uploadPolicy,
