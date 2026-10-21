@@ -49,10 +49,11 @@ jobs:
           npm run test:e2e 2>&1 | tee e2e.log
           status=${PIPESTATUS[0]}
           # Show each failed test (and its first error line) as an annotation on the run.
-          grep -nE '^\s+not ok [0-9]+ - ' e2e.log | head -9 | while IFS= read -r line; do
+          grep -nE '^\s+not ok [0-9]+ - ' e2e.log | head -10 | while IFS= read -r line; do
             n=${line%%:*}
-            msg=$(sed -n "$((n+1)),$((n+14))p" e2e.log | grep -m1 -E 'error:|Error|\+ ' | tr -d '\r')
-            echo "::error title=${{ matrix.browser }} test failed::$(echo "${line#*:}" | sed 's/^ *//') :: $msg"
+            title=$(echo "${line#*:}" | sed 's/^ *//')
+            detail=$(sed -n "$((n+1)),$((n+30))p" e2e.log | sed -n '/error: |-/,/code:/p' | sed '1d;$d' | head -8 | sed 's/^ *//' | tr '\n' ' ' | cut -c1-600)
+            echo "::error title=${{ matrix.browser }} test failed::${title} => ${detail}"
           done
           grep -E '^# (pass|fail)' e2e.log | tr '\n' ' ' | sed 's/^/::notice title=${{ matrix.browser }} totals::/'
           exit $status
