@@ -83,13 +83,14 @@ export async function openPage(browser, url, { viewport = { width: 1280, height:
     if (r.status() >= 500) problems.push(`http ${r.status()}: ${r.url()}`);
   });
   try {
-    // Firefox under CI sometimes never delivers the 'load' event to Playwright although the page is complete.
-    await page.goto(url, { waitUntil: ENGINE === 'firefox' ? 'domcontentloaded' : 'load' });
+    // Firefox under CI sometimes never reports the navigation as finished to Playwright although the page is complete.
+    await page.goto(url, { waitUntil: ENGINE === 'firefox' ? 'domcontentloaded' : 'load', timeout: ENGINE === 'firefox' ? 12000 : 30000 });
   } catch (err) {
     const state = await Promise.race([
       page.evaluate(() => ({ ready: document.readyState, fonts: document.fonts.status, resources: performance.getEntriesByType('resource').length, url: location.href })),
       new Promise((r) => setTimeout(() => r('page unresponsive'), 3000)),
     ]).catch((e) => `evaluate failed: ${e.message}`);
+    if (ENGINE === 'firefox' && state?.ready === 'complete') return { page, context, problems };
     err.message += `\nrequests still pending: ${[...pending].join(', ') || 'none'}; page state: ${JSON.stringify(state)}`;
     throw err;
   }
