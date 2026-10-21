@@ -1,7 +1,7 @@
 import { ApiError, badRequest, notFound } from '../errors.js';
 import { requireAdmin, requireModerator } from '../auth.js';
 import { serializeTrack } from '../repo.js';
-import { clampInt, now } from '../util.js';
+import { clampInt, cleanText, now } from '../util.js';
 
 const TRACK_BY_STATUS = `
   SELECT t.*, u.username AS artist_username, u.display_name AS artist_name, 0 AS liked
@@ -45,6 +45,7 @@ export default async function adminRoutes(app) {
     if (!['dismissed', 'removed'].includes(resolution)) {
       throw badRequest('invalid_resolution', 'resolution must be dismissed or removed');
     }
+    const reason = cleanText(req.body?.reason, 500);
     const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(Number(req.params.id));
     if (!report) throw notFound('Report not found');
     const t = now();
@@ -55,7 +56,7 @@ export default async function adminRoutes(app) {
           WHERE track_id = ? AND status = 'open'`,
       ).run(resolution, mod.id, t, report.track_id);
       if (resolution === 'removed') {
-        db.prepare("UPDATE tracks SET status='removed', updated_at=? WHERE id=?").run(t, report.track_id);
+        db.prepare("UPDATE tracks SET status='removed', removal_reason=?, removed_at=?, updated_at=? WHERE id=?").run(reason, t, t, report.track_id);
       }
     })();
     return { ok: true };
@@ -71,7 +72,10 @@ export default async function adminRoutes(app) {
     requireModerator(req);
     const status = req.body?.status;
     if (!['published', 'removed'].includes(status)) throw badRequest('invalid_status', 'status must be published or removed');
-    const info = db.prepare('UPDATE tracks SET status = ?, updated_at = ? WHERE id = ?').run(status, now(), String(req.params.id));
+    const t = now();
+    const reason = status === 'removed' ? cleanText(req.body?.reason, 500) : '';
+    const info = db.prepare('UPDATE tracks SET status = ?, removal_reason = ?, removed_at = ?, updated_at = ? WHERE id = ?')
+      .run(status, reason, status === 'removed' ? t : null, t, String(req.params.id));
     if (!info.changes) throw notFound('Track not found');
     return { ok: true };
   });

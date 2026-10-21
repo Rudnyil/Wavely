@@ -1,6 +1,7 @@
 import { test, describe, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { AxeBuilder } from '@axe-core/playwright';
 import { startServer, launch, openPage, closeOpenContexts } from './helpers.js';
 import { audio } from '../helpers.js';
 
@@ -71,6 +72,9 @@ describe('moderation, settings and server modes', () => {
     await row.getByText('This is a copy of my song').waitFor();
     await row.getByText('rights@example.org').waitFor();
     await row.getByRole('button', { name: 'Remove track' }).click();
+    const removeDlg = mod.page.getByRole('dialog');
+    await removeDlg.getByLabel('Reason (shown to the uploader)').fill('Copy of another song, claim from the rights holder');
+    await removeDlg.getByRole('button', { name: 'Remove track' }).click();
     await mod.page.getByText('No reports').waitFor();
     assert.equal((await api('GET', `/api/tracks/${draft.id}`)).res.status, 404);
     await mod.page.getByRole('tab', { name: 'Removed' }).click();
@@ -91,11 +95,29 @@ describe('moderation, settings and server modes', () => {
     await mod.page.goto(`${server.url}/admin?tab=queue`);
     await mod.page.locator('li', { hasText: 'Needs Review' }).waitFor();
     await mod.page.locator('li', { hasText: 'Bad Upload' }).getByRole('button', { name: 'Reject' }).click();
+    await mod.page.getByRole('dialog').getByLabel('Reason (shown to the uploader)').waitFor();
+    await mod.page.waitForTimeout(400);
+    const dialogAudit = await new AxeBuilder({ page: mod.page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+    assert.deepEqual(dialogAudit.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), []);
+    await mod.page.getByRole('dialog').getByLabel('Reason (shown to the uploader)').fill('Not AI-generated');
+    await mod.page.getByRole('dialog').getByRole('button', { name: 'Remove track' }).click();
     await mod.page.locator('li', { hasText: 'Needs Review' }).getByRole('button', { name: 'Approve' }).click();
     await mod.page.getByText('Nothing is waiting for review').waitFor();
     assert.equal((await api('GET', `/api/tracks/${t1.id}`)).res.status, 200);
     assert.equal((await api('GET', `/api/tracks/${t2.id}`)).res.status, 404);
-    // the author sees the status of their own pending uploads
+    // the uploader is told why the track was removed
+    const mine = await api('GET', '/api/tracks/mine', { cookie: user });
+    const removed = mine.json.items.find((x) => x.id === t2.id);
+    assert.equal(removed.status, 'removed');
+    assert.equal(removed.removalReason, 'Not AI-generated');
+    const author = await openPage(browser, server.url);
+    await signIn(author.page, 'newbie');
+    await author.page.goto(`${server.url}/library?tab=uploads`);
+    await author.page.getByRole('heading', { name: 'Removed by moderators' }).waitFor();
+    await author.page.locator(`[data-removed-id="${t2.id}"]`).getByText('Reason: Not AI-generated').waitFor();
+    const libAudit = await new AxeBuilder({ page: author.page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+    assert.deepEqual(libAudit.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), []);
+    await author.context.close();
     await mod.context.close();
   });
 

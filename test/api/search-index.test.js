@@ -32,13 +32,13 @@ test('migration 2 maps rows that already exist in a version 1 database', () => {
   ftsUpsert(db, { id: 'old_one', title: 'Legacy Song', prompt: 'p' }, 'A');
   ftsUpsert(db, { id: 'old_two', title: 'Legacy Tune', prompt: 'p' }, 'A');
   // Pretend this database was written by version 1: no map table.
-  db.exec(`DROP TABLE tracks_fts_map; DROP TABLE login_failures;
+  db.exec(`DROP TABLE tracks_fts_map; DROP TABLE login_failures; ALTER TABLE tracks DROP COLUMN removal_reason; ALTER TABLE tracks DROP COLUMN removed_at;
     DROP INDEX idx_tracks_status_plays; DROP INDEX idx_tracks_status_likes; DROP INDEX idx_tracks_status_title;
     DROP INDEX idx_tracks_status_genre; DROP INDEX idx_tracks_user_status;
     CREATE INDEX idx_tracks_status_plays ON tracks(status, plays DESC);`);
   db.pragma('user_version = 1');
   migrate(db);
-  assert.equal(db.pragma('user_version', { simple: true }), 4);
+  assert.equal(db.pragma('user_version', { simple: true }), 5);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM tracks_fts_map').get().n, 2);
   ftsUpsert(db, { id: 'old_one', title: 'Renamed Song', prompt: 'p' }, 'A');
   assert.deepEqual(hits(db, 'legacy'), ['old_two']);

@@ -44,7 +44,11 @@ export function LibraryPage() {
       <ul class="stack" style="gap:8px">${lists.data.items.map((p) => html`<li key=${p.id}><a class="btn" style="width:100%;justify-content:space-between;height:52px" href=${`/p/${p.id}`}>
         <span class="clamp"><strong>${p.name}</strong> ${p.isPublic ? '' : html`<span class="badge" style="margin-left:6px">${t('playlist.private')}</span>`}</span><span class="faint">${tn('count.tracks', p.tracks)}</span></a></li>`)}</ul>`
     : html`<${Empty} icon="library" title=${t('library.noPlaylists')}>${t('library.noPlaylistsHint')}<//>`) : null}
-    ${tab === 'uploads' ? (mine.loading || (!mine.data && !mine.error) ? html`<${Spinner} />` : mine.error ? html`<${Failed} onRetry=${mine.reload} />` : mine.data.items.length ? html`<${TrackList} tracks=${mine.data.items} />`
+    ${tab === 'uploads' && mine.data && mine.data.items.some((x) => x.status === 'removed') ? html`<section class="panel notice-removed" aria-labelledby="h-removed" style="margin-bottom:16px">
+      <h2 id="h-removed" style="font-size:1rem;margin-bottom:6px">${t('library.removedTitle')}</h2><p class="muted">${t('library.removedIntro')}</p>
+      <ul class="stack" style="gap:8px;margin-top:10px">${mine.data.items.filter((x) => x.status === 'removed').map((x) => html`<li key=${x.id} data-removed-id=${x.id}><strong>${x.title}</strong>
+        <div class="faint">${x.removalReason ? t('library.removedReason', { reason: x.removalReason }) : t('library.removedNoReason')}</div></li>`)}</ul></section>` : null}
+    ${tab === 'uploads' ? (mine.loading || (!mine.data && !mine.error) ? html`<${Spinner} />` : mine.error ? html`<${Failed} onRetry=${mine.reload} />` : mine.data.items.filter((x) => x.status !== 'removed').length ? html`<${TrackList} tracks=${mine.data.items.filter((x) => x.status !== 'removed')} />`
     : html`<${Empty} icon="upload" title=${t('library.noUploads')}>${config.canUpload ? t('library.noUploadsHint') : t('library.uploadsRestricted')}<//>`) : null}
   </div>`;
 }

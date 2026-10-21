@@ -250,6 +250,30 @@ function ReportDialog({ track }) {
   <//>`;
 }
 
+/* ---- moderator removal with a reason shown to the uploader ------------------------------- */
+function RemoveTrackDialog({ track, onConfirm }) {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    const reason = new FormData(e.target).get('reason');
+    setBusy(true);
+    try { await onConfirm(String(reason || '').trim()); closeDialog(); }
+    catch (err) { setError(errorText(err)); setBusy(false); }
+  };
+  return html`<${Modal} title=${t('remove.title')} onClose=${closeDialog}>
+    <p class="muted" style="margin-bottom:14px">${t('remove.intro', { title: track.title })}</p>
+    <form onSubmit=${submit}>
+      <div class="field"><label for="rm-reason">${t('remove.reason')}</label>
+        <textarea id="rm-reason" name="reason" class="textarea" maxlength="500" required></textarea>
+        <span class="hint">${t('remove.reasonHint')}</span></div>
+      <${FormError} error=${error} />
+      <div class="modal-foot"><button type="button" class="btn" onClick=${closeDialog}>${t('common.cancel')}</button>
+        <button class="btn danger" type="submit" disabled=${busy}>${t('remove.confirm')}</button></div>
+    </form>
+  <//>`;
+}
+
 /* ---- playlists --------------------------------------------------------------------- */
 function PlaylistPickerDialog({ track }) {
   const lists = useAsync(() => api('/playlists'), []);
@@ -345,6 +369,7 @@ export function DialogHost() {
     case 'edit-track': return html`<${EditTrackDialog} ...${props} />`;
     case 'delete-track': return html`<${DeleteTrackDialog} ...${props} />`;
     case 'report': return html`<${ReportDialog} ...${props} />`;
+    case 'remove-track': return html`<${RemoveTrackDialog} ...${props} />`;
     case 'playlist-picker': return html`<${PlaylistPickerDialog} ...${props} />`;
     case 'playlist-form': return html`<${PlaylistFormDialog} ...${props} />`;
     case 'delete-account': return html`<${DeleteAccountDialog} />`;

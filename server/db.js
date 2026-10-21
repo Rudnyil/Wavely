@@ -130,6 +130,10 @@ const MIGRATIONS = [
     first INTEGER NOT NULL
   ) WITHOUT ROWID;
   `,
+  /* 5: the moderator's reason for a removal, shown to the uploader */ `
+  ALTER TABLE tracks ADD COLUMN removal_reason TEXT NOT NULL DEFAULT '';
+  ALTER TABLE tracks ADD COLUMN removed_at INTEGER;
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

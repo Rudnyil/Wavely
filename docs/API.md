@@ -39,7 +39,7 @@ Track object: `{id, title, genre, model, prompt, license, duration, plays, likes
 | Method & path | Auth | Description |
 |---|---|---|
 | `GET /api/tracks` | – | Query: `q` (full text), `sort` = `new` \| `popular` \| `liked` \| `title`, `genre`, `artist` (username), `liked=1` (own likes; needs sign-in), `limit` (≤100, default 30), `offset`. → `{items, total}` |
-| `GET /api/tracks/mine` | user | Own tracks that are not removed |
+| `GET /api/tracks/mine` | user | Own tracks of every status. Removed ones carry `removalReason` and `removedAt` |
 | `GET /api/tracks/:id` | – | Detail. Pending tracks are visible to the owner and mods, removed ones to mods |
 | `POST /api/tracks` | user | `multipart/form-data`: `audio` (file), `cover` (optional image), `title`, `prompt`, `confirmAi=true`, optional `genre`, `model`, `lyrics`, `license` (`commercial` \| `non_commercial`, default `non_commercial`). → `201` track. Fails with `invalid_audio`, `no_audio`, `too_long`, `too_large` (413), `invalid_cover`, `confirmation_required`, … |
 | `PATCH /api/tracks/:id` | owner or mod | Any of `title, genre, model, prompt, lyrics, license` |
@@ -77,9 +77,9 @@ Playlist object: `{id, name, description, isPublic, owner:{username, displayName
 |---|---|---|
 | `GET /api/admin/stats` | mod | Counters and audio storage size |
 | `GET /api/admin/reports?status=open\|resolved` | mod | Reports with track and reporter info |
-| `POST /api/admin/reports/:id/resolve` | mod | `{resolution: "dismissed" \| "removed"}`. Resolves every open report for that track; `removed` hides the track (files are kept until deleted) |
+| `POST /api/admin/reports/:id/resolve` | mod | `{resolution: "dismissed" \| "removed", reason?}` (`reason` ≤ 500 characters is stored and shown to the uploader). Resolves every open report for that track; `removed` hides the track (files are kept until deleted) |
 | `GET /api/admin/tracks?status=pending\|removed` | mod | Review queue / removed tracks |
-| `POST /api/admin/tracks/:id/status` | mod | `{status: "published" \| "removed"}` (approve, reject, restore) |
+| `POST /api/admin/tracks/:id/status` | mod | `{status: "published" \| "removed", reason?}` (approve, reject, restore; the reason of a removal is shown to the uploader and cleared on restore) |
 | `GET /api/admin/users?q=` | admin | Users |
 | `PATCH /api/admin/users/:id` | admin | `{role?, disabled?}`. You cannot demote or disable yourself. Disabling ends all sessions |
 

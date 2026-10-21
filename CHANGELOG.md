@@ -8,6 +8,7 @@
 - Pages show an error with a retry button instead of crashing when a request fails; a dropped connection is retried once.
 - Cross-browser CI: the browser suite also runs in Firefox and WebKit (Safari's engine). It found and fixed two Firefox bugs: the player button could show "Play" while audio was playing, and the Library page could crash while its data was empty.
 - Failed-login counters are stored in the database and survive restarts. A permission-matrix test classifies every API route (anonymous, user, moderator, admin) and checks ownership rules, so a new route without an access rule fails the build.
+- Removing a track asks the moderator for a reason, which the uploader sees in Library → Uploads (clear statement of reasons).
 - `CONTACT_EMAIL` and `LEGAL_URL` settings (About page), `docs/LEGAL.md` with a takedown procedure, questions for a lawyer and a terms template.
 - `.npmrc` skips install scripts (better-sqlite3 ships prebuilt binaries).
 

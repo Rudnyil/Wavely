@@ -34,6 +34,10 @@ export function serializeTrack(row, { detail = false } = {}) {
     artist: { username: row.artist_username, displayName: row.artist_name },
     userId: row.user_id,
   };
+  if (row.status === 'removed') {
+    out.removalReason = row.removal_reason || '';
+    out.removedAt = row.removed_at || null;
+  }
   if (detail) {
     out.lyrics = row.lyrics;
     try { out.peaks = JSON.parse(row.peaks); } catch { out.peaks = []; }
@@ -95,9 +99,9 @@ export function listTracks(db, viewer, opts = {}) {
   return { items: rows.map((r) => serializeTrack(r)), total };
 }
 
-/** The viewer's own tracks of any status except removed (moderators handle removed ones). */
+/** The viewer's own tracks of every status. Removed ones are included so that the uploader can see why they were removed. */
 export function listOwnTracks(db, viewer) {
-  const rows = db.prepare(`${BASE} WHERE t.user_id = @viewer AND t.status != 'removed' ORDER BY t.created_at DESC`)
+  const rows = db.prepare(`${BASE} WHERE t.user_id = @viewer ORDER BY t.created_at DESC`)
     .all({ viewer: viewer.id });
   return rows.map((r) => serializeTrack(r));
 }

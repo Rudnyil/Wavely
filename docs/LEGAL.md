@@ -2,12 +2,25 @@
 
 **This is practical guidance, not legal advice.** The software cannot decide whether a track infringes copyright, imitates a real person's voice, or really is AI-generated. If you serve the public, those decisions are yours, and the rules differ by country. Use this page to prepare, then ask a lawyer where you operate.
 
+## If you have no lawyer
+
+Most small hobby and community projects start without one. This is the order I would work in, from cheapest and most protective to most formal. Nothing here replaces advice for your situation.
+
+1. **Keep it small and controlled first.** An instance that is invite-only (`REGISTRATION=invite`) with `REQUIRE_APPROVAL=true`, where you know the uploaders, has a very different risk profile from an open public site. Run it that way for a while and loosen it only when you are comfortable with how reports are handled.
+2. **Fill in the basics the software supports.** Set `CONTACT_EMAIL` and `LEGAL_URL`, publish a short terms page (template below), and answer every report quickly. Acting promptly on a credible notice is the single habit that matters most under notice-and-action rules such as the EU Digital Services Act and the US DMCA.
+3. **Always tell the uploader why.** When you remove a track, the dialog asks for a reason, and the uploader sees it in their Library (the EU rules ask for a clear statement of reasons when content is removed). Write the rule that was broken or the claim you received, not just "removed".
+4. **Keep a record.** Reports, resolutions and reasons are stored; export them (or the database) now and then.
+5. **Check the official texts for the few rules that apply to you.** As far as I could verify from a secondary summary (not the regulation itself), the DSA obligations that apply even to very small hosting services are: a contact point for authorities and users (Arts. 11-12), terms that describe your moderation (Art. 14), a notice mechanism and diligent handling of notices (Art. 16), and a statement of reasons to the affected user (Art. 17). The regulation is public on EUR-Lex (Regulation (EU) 2022/2065); read those articles once. Whether transparency reports are required for a micro enterprise, and whether you count as one, is exactly the kind of question to confirm with an authoritative source.
+6. **Cheap sources of real advice.** National bar associations and many university law clinics offer a free or low-cost first consultation, and a single hour with a lawyer who knows IT or copyright law is usually enough to review your terms page and your takedown routine. Prepare with the questions below so the hour is not wasted.
+7. **Know what you are not covered for.** If a rights holder sends a formal claim, or a regulator contacts you, stop improvising and get advice at that point; do not ignore it.
+
 ## What the software already does
 
 | Risk | Built-in help |
 |---|---|
 | Uploader claims rights they do not have | Every upload requires the "AI-generated, I have the right to publish" confirmation and a prompt/description; the license field states what listeners may do |
 | Infringing or abusive track | Public "Report" button (no account needed, optional contact details); moderator queue; one-click removal; removed tracks stay hidden but are kept until you delete them, so you can review or restore |
+| Telling the uploader why | Removing a track requires a written reason, which the uploader sees in their Library |
 | Repeat offenders | Admins can disable accounts (this also ends their sessions) |
 | Unreviewed content | `REQUIRE_APPROVAL=true` holds every upload until a moderator publishes it; `REGISTRATION=invite` or `closed` limits who can upload |
 | Contact for rights holders | `CONTACT_EMAIL` and `LEGAL_URL` appear on the About page |
@@ -25,8 +38,8 @@
 ## Handling a takedown notice
 
 1. A notice arrives through the Report button or `CONTACT_EMAIL`. Check it names the track (a link such as `/t/<id>`), the rights holder, and the claim.
-2. Open the report in **Admin → Reports**. If the claim is plausible, choose **Remove track**; the track disappears from every page and from search at once.
-3. Tell the uploader (the software has no email, so use whatever channel you have, or say so in your terms).
+2. Open the report in **Admin → Reports**. If the claim is plausible, choose **Remove track** and write the reason; the track disappears from every page and from search at once.
+3. The uploader sees your reason under **Library → Uploads → Removed by moderators**. The software has no email, so the notifier (if they left contact details) must be answered by you by hand.
 4. If the uploader disputes it, decide according to your terms and local law. Keep both messages.
 5. Accounts with repeated valid notices: disable them in **Admin → Users**.
 

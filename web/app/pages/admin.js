@@ -2,7 +2,7 @@ import { html, Icon, api, fmtBytes, fmtDate, fmtNumber } from '../lib.js';
 import { t, tn, useLang, errorText, getLang } from '../i18n.js';
 import { useAsync, Spinner, Empty, Failed } from '../components/common.js';
 import { TrackList } from '../components/tracks.js';
-import { useSession, isModerator, useDataVersion, invalidate } from '../session.js';
+import { useSession, isModerator, useDataVersion, invalidate, openDialog } from '../session.js';
 import { toast } from '../toast.js';
 import { navigate, useRoute } from '../router.js';
 import { usePageTitle } from './util.js';
@@ -37,8 +37,9 @@ function Reports({ version }) {
   const [status, setStatus] = useStateLocal('open');
   const list = useAsync(() => api(`/admin/reports?status=${status}`), [status, version]);
   const resolve = async (r, resolution) => {
-    try { await api(`/admin/reports/${r.id}/resolve`, { method: 'POST', body: { resolution } }); toast(t('common.saved')); invalidate(); }
-    catch (e) { toast(errorText(e), 'error'); }
+    const send = async (reason) => { await api(`/admin/reports/${r.id}/resolve`, { method: 'POST', body: { resolution, reason } }); toast(t('common.saved')); invalidate(); };
+    if (resolution === 'removed') { openDialog('remove-track', { track: { title: r.trackTitle }, onConfirm: send }); return; }
+    try { await send(''); } catch (e) { toast(errorText(e), 'error'); }
   };
   return html`<div>
     <div class="chips" style="margin-bottom:14px"><button class="chip" aria-pressed=${status === 'open'} onClick=${() => setStatus('open')}>${t('admin.open')}</button>
@@ -58,8 +59,9 @@ function Reports({ version }) {
 function TrackQueue({ status, version }) {
   const list = useAsync(() => api(`/admin/tracks?status=${status}`), [status, version]);
   const set = async (track, to) => {
-    try { await api(`/admin/tracks/${track.id}/status`, { method: 'POST', body: { status: to } }); toast(t('common.saved')); invalidate(); }
-    catch (e) { toast(errorText(e), 'error'); }
+    const send = async (reason) => { await api(`/admin/tracks/${track.id}/status`, { method: 'POST', body: { status: to, reason } }); toast(t('common.saved')); invalidate(); };
+    if (to === 'removed') { openDialog('remove-track', { track, onConfirm: send }); return; }
+    try { await send(''); } catch (e) { toast(errorText(e), 'error'); }
   };
   if (list.loading) return html`<${Spinner} />`;
   if (list.error) return html`<${Failed} onRetry=${list.reload} />`;
